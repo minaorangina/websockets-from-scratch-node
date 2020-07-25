@@ -1,3 +1,4 @@
+const fs = require("fs");
 const http = require("http");
 const crypto = require("crypto");
 const static = require("node-static");
@@ -6,6 +7,9 @@ const file = new static.Server("./public");
 const server = http.createServer((req, res) => {
   req.addListener("end", () => file.serve(req, res)).resume();
 });
+const booksRaw = fs.readFileSync(`${__dirname}/books.json`);
+const books = JSON.parse(booksRaw);
+const numBooks = books.length;
 
 server.on("upgrade", (req, socket) => {
   if (req.headers.upgrade !== "websocket") {
@@ -41,6 +45,15 @@ server.on("upgrade", (req, socket) => {
 
       console.log("Sending back: ", response.toString("hex"));
       socket.write(response);
+
+      setInterval(() => {
+        const bookTitle = books[Math.floor(Math.random() * numBooks)].title;
+        socket.write(
+          constructReply({
+            message: bookTitle,
+          })
+        );
+      }, Math.random() * 10000);
     } else if (msgFromClient === null) {
       console.log("WebSocket connection closed by the client.");
     }
